@@ -61,23 +61,56 @@ func Move(p Payload) string {
 	}
 	ruleset = &standard
 	boardState := getBoardStateFromBoard(p.Board)
-	return tryMoves(p.You.Id, ruleset, boardState)
+	boardMap := buildBoardMap(p)
+	return tryMoves(p.You.Id, ruleset, boardState, boardMap)
 }
 
-/*
-	For your snake, try u/d/l/r
-	For each other snake also try u/d/l/r
-	This is 4^8 options max (65k)
-	The best option seems to be:
-	 - Simulate all the possibilities and grade them for each snake
-         - Assume everyone is trying to maximize their own results
-	 - Assume everyone is trying to minimize other snake results
-*/
-func tryMoves(you string, r rules.Ruleset, b *rules.BoardState) string {
+func buildBoardMap(p Payload) map[string]int {
+	boardMap := make(map[string]int)
+	for _, s := range p.Board.Snakes {
+		snakeFactor := -10
+		if p.You.Length > s.Length {
+			snakeFactor = int(s.Length)
+		}
+		key := keyFromCoord(s.Head)
+		if val, ok := boardMap[key]; ok {
+			boardMap[key] = val + snakeFactor
+		} else {
+			boardMap[key] = snakeFactor
+		}
+	}
+	for _, h := range p.Board.Hazards {
+		key := keyFromCoord(h)
+		if val, ok := boardMap[key]; ok {
+			boardMap[key] = val - 10
+		} else {
+			boardMap[key] = -10
+		}
+	}
+	for _, f := range p.Board.Food {
+		key := keyFromCoord(f)
+		if val, ok := boardMap[key]; ok {
+			boardMap[key] = val + 5
+		} else {
+			boardMap[key] = 5
+		}
+	}
+	return boardMap
+}
+
+func keyFromCoord(c Coord) string {
+	return strconv.Itoa(int(c.X)) + "-" + strconv.Itoa(int(c.Y))
+}
+
+func keyFromPoint(p rules.Point) string {
+	return strconv.Itoa(int(p.X)) + "-" + strconv.Itoa(int(p.Y))
+}
+
+func tryMoves(you string, r rules.Ruleset, b *rules.BoardState, boardMap map[string]int) string {
 	possibleMoves := [4]string{"up", "down", "left", "right"}
 	arr := make([]string, len(b.Snakes))
 	gradeMap := make(map[string]map[string]int)
-	generateGrades(arr, 0, r, b, gradeMap)
+	generateGrades(arr, 0, r, b, gradeMap, boardMap)
 	maxMoveScore := make(map[string]int)
 	maxMoveMove := make(map[string]string)
 	for _, s := range b.Snakes {
@@ -97,7 +130,8 @@ func tryMoves(you string, r rules.Ruleset, b *rules.BoardState) string {
 }
 
 func generateGrades(arr []string, curPos int, r rules.Ruleset,
-	b *rules.BoardState, gradeMap map[string]map[string]int) {
+	b *rules.BoardState, gradeMap map[string]map[string]int,
+	boardMap map[string]int) {
 	possibleMoves := [4]string{"up", "down", "left", "right"}
 	if curPos == len(arr) {
 		snakeMoves := make([]rules.SnakeMove, 0)
@@ -116,7 +150,8 @@ func generateGrades(arr []string, curPos int, r rules.Ruleset,
 		gradeMap[moveKey] = make(map[string]int)
 		result, _ := r.CreateNextBoardState(b, snakeMoves)
 		for _, s := range result.Snakes {
-			score := len(s.Body)
+                        targetScore := boardMap[keyFromPoint(s.Body[0])]
+			score := len(s.Body) + targetScore
 			if len(s.EliminatedCause) > 0 {
 				score = 0
 			}
@@ -126,7 +161,7 @@ func generateGrades(arr []string, curPos int, r rules.Ruleset,
 	}
 	for _, val := range possibleMoves {
 		arr[curPos] = val
-		generateGrades(arr, curPos+1, r, b, gradeMap)
+		generateGrades(arr, curPos+1, r, b, gradeMap, boardMap)
 	}
 }
 
