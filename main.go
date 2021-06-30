@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/LenPayne/BattleSnake-GoLang/pkg/snake"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
@@ -18,16 +19,22 @@ func main() {
 			"version":    "0.0.1-alpha",
 		})
 	})
-	r.GET("/move", func(c *gin.Context) {
+	r.POST("/move", func(c *gin.Context) {
+		var json snake.Payload
+		if err := c.ShouldBindJSON(&json); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"move":  "left",
+			"move":  snake.Move(json),
 			"shout": "From hell’s heart I stab at thee",
 		})
 	})
-	r.GET("/start", func(c *gin.Context) {
+	r.POST("/start", func(c *gin.Context) {
 		c.String(http.StatusOK, "")
 	})
-	r.GET("/end", func(c *gin.Context) {
+	r.POST("/end", func(c *gin.Context) {
 		c.String(http.StatusOK, "")
 	})
 	r.Run()
