@@ -68,15 +68,17 @@ func Move(p Payload) string {
 func buildBoardMap(p Payload) map[string]int {
 	boardMap := make(map[string]int)
 	for _, s := range p.Board.Snakes {
-		snakeFactor := -10
-		if p.You.Length > s.Length {
-			snakeFactor = int(s.Length)
-		}
-		key := keyFromCoord(s.Head)
-		if val, ok := boardMap[key]; ok {
-			boardMap[key] = val + snakeFactor
-		} else {
-			boardMap[key] = snakeFactor
+		for i, c := range s.Body {
+			snakeFactor := -10
+			if i == 0 && p.You.Length > s.Length {
+				snakeFactor = int(s.Length)
+			}
+			key := keyFromCoord(c)
+			if val, ok := boardMap[key]; ok {
+				boardMap[key] = val + snakeFactor
+			} else {
+				boardMap[key] = snakeFactor
+			}
 		}
 	}
 	for _, h := range p.Board.Hazards {
@@ -150,7 +152,8 @@ func generateGrades(arr []string, curPos int, r rules.Ruleset,
 		gradeMap[moveKey] = make(map[string]int)
 		result, _ := r.CreateNextBoardState(b, snakeMoves)
 		for _, s := range result.Snakes {
-                        targetScore := boardMap[keyFromPoint(s.Body[0])]
+			key := keyFromPoint(s.Body[0])
+                        targetScore := boardMap[key]
 			score := len(s.Body) + targetScore
 			if len(s.EliminatedCause) > 0 {
 				score = 0
