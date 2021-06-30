@@ -79,6 +79,16 @@ func buildBoardMap(p Payload) map[string]int {
 			} else {
 				boardMap[key] = snakeFactor
 			}
+			if s.Id != p.You.Id {
+				nearbyKeys := splashKeysFromCoord(c, p.Board.Width, p.Board.Height)
+				for _, k := range nearbyKeys {
+					if val, ok := boardMap[k]; ok {
+						boardMap[k] = val + (snakeFactor/2)
+					} else {
+						boardMap[k] = snakeFactor / 2
+					}
+				}
+			}
 		}
 	}
 	for _, h := range p.Board.Hazards {
@@ -96,6 +106,14 @@ func buildBoardMap(p Payload) map[string]int {
 		} else {
 			boardMap[key] = 5
 		}
+		nearbyKeys := splashKeysFromCoord(f, p.Board.Width, p.Board.Height)
+		for _, k := range nearbyKeys {
+			if val, ok := boardMap[k]; ok {
+				boardMap[k] = val + 3
+			} else {
+				boardMap[k] = 3
+			}
+		}
 	}
 	return boardMap
 }
@@ -106,6 +124,23 @@ func keyFromCoord(c Coord) string {
 
 func keyFromPoint(p rules.Point) string {
 	return strconv.Itoa(int(p.X)) + "-" + strconv.Itoa(int(p.Y))
+}
+
+func splashKeysFromCoord(c Coord, w int32, h int32) []string {
+	result := make([]string, 0)
+	if c.X > 0 {
+		result = append(result, keyFromCoord(Coord{c.X - 1, c.Y}))
+	}
+	if c.X < (w-2) {
+		result = append(result, keyFromCoord(Coord{c.X + 1, c.Y}))
+	}
+	if c.Y > 0 {
+		result = append(result, keyFromCoord(Coord{c.X, c.Y - 1}))
+	}
+	if c.Y < (h-2) {
+		result = append(result, keyFromCoord(Coord{c.X, c.Y + 1}))
+	}
+	return result
 }
 
 func tryMoves(you string, r rules.Ruleset, b *rules.BoardState, boardMap map[string]int) string {
