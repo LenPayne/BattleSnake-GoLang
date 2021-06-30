@@ -15,7 +15,7 @@ type Snake struct {
 	Name    string  `json:"name"`
 	Health  int32   `json:"health"`
 	Body    []Coord `json:"body"`
-	Latency int32   `json:"latency"`
+	Latency string  `json:"latency"`
 	Head    Coord   `json:"head"`
 	Length  int32   `json:"length"`
 	Shout   string  `json:"shout"`
