@@ -79,7 +79,7 @@ func buildBoardMap(p Payload) map[string]int {
 			} else {
 				boardMap[key] = snakeFactor
 			}
-			if s.Id != p.You.Id {
+			if i == 0 && s.Id != p.You.Id {
 				nearbyKeys := splashKeysFromCoord(c, p.Board.Width, p.Board.Height)
 				for _, k := range nearbyKeys {
 					if val, ok := boardMap[k]; ok {
