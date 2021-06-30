@@ -113,22 +113,30 @@ func tryMoves(you string, r rules.Ruleset, b *rules.BoardState, boardMap map[str
 	arr := make([]string, len(b.Snakes))
 	gradeMap := make(map[string]map[string]int)
 	generateGrades(arr, 0, r, b, gradeMap, boardMap)
-	maxMoveScore := make(map[string]int)
-	maxMoveMove := make(map[string]string)
-	for _, s := range b.Snakes {
-		maxMoveScore[s.ID] = -1
-		maxMoveMove[s.ID] = "up"
-	}
-	for moveKey, scoreMap := range gradeMap {
-		for i, s := range b.Snakes {
-			if scoreMap[s.ID] > maxMoveScore[s.ID] {
-				maxMoveScore[s.ID] = scoreMap[s.ID]
-				snakeIndex := moveKey[i] - byte('0')
-				maxMoveMove[s.ID] = possibleMoves[snakeIndex]
-			}
+	youIndex := 0
+	for i, s := range b.Snakes {
+		if you == s.ID {
+			youIndex = i
 		}
 	}
-	return maxMoveMove[you]
+	scoreArray := [4]int{0,0,0,0}
+	countArray := [4]int{0,0,0,0}
+	// TODO: take the average of results for all moves in a single direction
+	for moveKey, scoreMap := range gradeMap {
+		yourMove := moveKey[youIndex] - byte('0')
+		scoreArray[yourMove] = scoreArray[yourMove] + scoreMap[you]
+		countArray[yourMove] = countArray[yourMove] + 1
+	}
+	highScore := 0
+	move := "up"
+	for i, m := range possibleMoves {
+		avg := scoreArray[i] / countArray[i]
+		if avg > highScore {
+			highScore = avg
+			move = m
+		}
+	}
+	return move
 }
 
 func generateGrades(arr []string, curPos int, r rules.Ruleset,
