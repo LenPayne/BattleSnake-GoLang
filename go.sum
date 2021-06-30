@@ -20,6 +20,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9 h1:VpgP7xuJadIUu
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BattlesnakeOfficial/rules v1.0.17 h1:+dfIxtp0Q8ifO1/MuTo6asER6hhi1J/iScNBrIvGLFY=
 github.com/BattlesnakeOfficial/rules v1.0.17/go.mod h1:V0FxuBl6wo0aVOnaDsw53ytWsUsXpNzaMO7gmAmokmg=
+github.com/BattlesnakeOfficial/rules v1.0.18-0.20210621212531-d750b0831711 h1:iLGLM3r2N11mH+zTZ0jx3srXTPtE+4rZc1jmbFWDvdU=
+github.com/BattlesnakeOfficial/rules v1.0.18-0.20210621212531-d750b0831711/go.mod h1:V0FxuBl6wo0aVOnaDsw53ytWsUsXpNzaMO7gmAmokmg=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802 h1:1BDTz0u9nC3//pOCMdNH+CiXJVYJh5UQNCOBG7jbELc=
