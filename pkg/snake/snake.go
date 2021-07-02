@@ -128,17 +128,12 @@ func keyFromPoint(p rules.Point) string {
 
 func splashKeysFromCoord(c Coord, w int32, h int32) []string {
 	result := make([]string, 0)
-	if c.X > 0 {
-		result = append(result, keyFromCoord(Coord{c.X - 1, c.Y}))
-	}
-	if c.X < (w-2) {
-		result = append(result, keyFromCoord(Coord{c.X + 1, c.Y}))
-	}
-	if c.Y > 0 {
-		result = append(result, keyFromCoord(Coord{c.X, c.Y - 1}))
-	}
-	if c.Y < (h-2) {
-		result = append(result, keyFromCoord(Coord{c.X, c.Y + 1}))
+	for x := c.X - 2; x <= c.X + 2; x++ {
+		for y := c.Y - 2; y <= c.Y + 2; y++ {
+			if x >= 0 && x < w && y >= 0 && y < h {
+				result = append(result, keyFromCoord(Coord{x,y}))
+			}
+		}
 	}
 	return result
 }
@@ -156,7 +151,6 @@ func tryMoves(you string, r rules.Ruleset, b *rules.BoardState, boardMap map[str
 	}
 	scoreArray := [4]int{0,0,0,0}
 	countArray := [4]int{0,0,0,0}
-	// TODO: take the average of results for all moves in a single direction
 	for moveKey, scoreMap := range gradeMap {
 		yourMove := moveKey[youIndex] - byte('0')
 		scoreArray[yourMove] = scoreArray[yourMove] + scoreMap[you]
@@ -171,6 +165,7 @@ func tryMoves(you string, r rules.Ruleset, b *rules.BoardState, boardMap map[str
 			move = m
 		}
 	}
+	// TODO: Iterate the board a few more times. Maybe take out a bunch of the hokey shit and just assume everyone is trying to do the same thing.
 	return move
 }
 
