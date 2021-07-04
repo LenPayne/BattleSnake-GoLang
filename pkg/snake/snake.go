@@ -3,7 +3,7 @@ package snake
 import (
 	"github.com/BattlesnakeOfficial/rules"
 	"strconv"
-	// "fmt"
+	"fmt"
 )
 
 type Coord struct {
@@ -304,9 +304,11 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 					score = score + 500
 				}
 				dist := abs(yHead.X - f.X) + abs(yHead.Y - f.Y)
-				if dist < 3 {
-					score = score + 250
+				if dist == 0 {
+					dist = 1
 				}
+				foodScore := int((1.0/float32(dist)) * 1000)
+				score = score + foodScore
 			}
 			for _, os := range b.Snakes {
 				for i, osb := range os.Body {
