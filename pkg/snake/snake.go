@@ -110,7 +110,7 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 	thisTurnMoves []rules.SnakeMove) int {
 	// fmt.Printf("-> %s %d %d %d\n", node.Move.Move, depth, alpha, beta)
 	if b == nil || b.Snakes == nil {
-		return -1000001
+		return -1000002
 	}
 	thisValue := scoreMoveOnBoardState(youID, node.Move, r, b)
 	gameIsOver, _ := r.IsGameOver(b)
@@ -170,7 +170,7 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 				copyTurnMoves))
 			alpha = max(alpha, value)
 			if value >= beta {
-				// break
+				break
 			}
 		}
 		return value
@@ -197,7 +197,7 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 				boardState, copyTurnMoves))
 			beta = min(beta, value)
 			if value <= alpha {
-		//		break
+				break
 			}
 		}
 		return value
