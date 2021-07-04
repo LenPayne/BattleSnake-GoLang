@@ -69,6 +69,7 @@ func Move(p Payload) string {
 	}
 	ruleset = &standard
 	boardState := getBoardStateFromBoard(p.Board)
+	boardMap := buildBoardMap(p)
 	possibleMoves := [4]Node{
 		Node{
 			Move:     rules.SnakeMove{ID: p.You.Id, Move: "up"},
@@ -99,6 +100,9 @@ func Move(p Payload) string {
 			move = n.Move.Move
 			value = val
 		}
+	}
+	if value <= -1000000 {
+		move = findBestAdjacent(p.You.Head, boardMap)
 	}
 	return move
 }
@@ -430,6 +434,32 @@ func buildBoardMap(p Payload) map[string]int {
 		}
 	}
 	return boardMap
+}
+
+func findBestAdjacent(c Coord, boardMap map[string]int) string {
+	val := -1000000
+	move := "up"
+	upVal := boardMap[keyFromCoord(Coord{c.X, c.Y+1})]
+	if upVal > val {
+		val = upVal
+		move = "up"
+	}
+	downVal := boardMap[keyFromCoord(Coord{c.X, c.Y-1})]
+	if downVal > val {
+		val = downVal
+		move = "down"
+	}
+	leftVal := boardMap[keyFromCoord(Coord{c.X-1, c.Y})]
+	if leftVal > val {
+		val = leftVal
+		move = "left"
+	}
+	rightVal := boardMap[keyFromCoord(Coord{c.X+1, c.Y})]
+	if rightVal > val {
+		val = rightVal
+		move = "right"
+	}
+	return move
 }
 
 func keyFromCoord(c Coord) string {
