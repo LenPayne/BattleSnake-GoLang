@@ -70,31 +70,30 @@ func Move(p Payload) string {
 	boardState := getBoardStateFromBoard(p.Board)
 	possibleMoves := []Node{
 		Node{
-			Move: rules.SnakeMove{ID: p.You.Id, Move: "up"},
-			Value: -1000000,
+			Move:     rules.SnakeMove{ID: p.You.Id, Move: "up"},
+			Value:    -1000000,
 			Children: make([]Node, 0),
 		},
 		Node{
-			Move: rules.SnakeMove{ID: p.You.Id, Move: "down"},
-			Value: -1000000,
+			Move:     rules.SnakeMove{ID: p.You.Id, Move: "down"},
+			Value:    -1000000,
 			Children: make([]Node, 0),
 		},
 		Node{
-			Move: rules.SnakeMove{ID: p.You.Id, Move: "left"},
-			Value: -1000000,
+			Move:     rules.SnakeMove{ID: p.You.Id, Move: "left"},
+			Value:    -1000000,
 			Children: make([]Node, 0),
 		},
 		Node{
-			Move: rules.SnakeMove{ID: p.You.Id, Move: "right"},
-			Value: -1000000,
+			Move:     rules.SnakeMove{ID: p.You.Id, Move: "right"},
+			Value:    -1000000,
 			Children: make([]Node, 0),
 		},
 	}
 	move := "left"
 	value := -2000000
 	for _, n := range possibleMoves {
-		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id,
-			ruleset, boardState, make([]rules.SnakeMove, 0))
+		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
 		// fmt.Printf("----> %s %d\n", n.Move.Move, val)
 		if val > value {
 			move = n.Move.Move
@@ -105,8 +104,7 @@ func Move(p Payload) string {
 	return move
 }
 
-func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
-	youID string, currentID string, r rules.Ruleset, b *rules.BoardState,
+func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool, youID string, currentID string, r rules.Ruleset, b *rules.BoardState,
 	thisTurnMoves []rules.SnakeMove) int {
 	// fmt.Printf("-> %s %d %d %d\n", node.Move.Move, depth, alpha, beta)
 	if b == nil || b.Snakes == nil {
@@ -204,8 +202,7 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 	}
 }
 
-func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
-	b *rules.BoardState) int {
+func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *rules.BoardState) int {
 	moves := make([]rules.SnakeMove, 0)
 	moves = append(moves, m)
 	safeMoveMap := make(map[string]map[string]bool, 0)
@@ -289,8 +286,7 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 			if len(s.EliminatedCause) > 0 {
 				return -1000001
 			}
-			if yHead.X < 0 || yHead.X >= nextBoard.Width ||
-				yHead.Y < 0 || yHead.Y >= nextBoard.Height {
+			if yHead.X < 0 || yHead.X >= nextBoard.Width || yHead.Y < 0 || yHead.Y >= nextBoard.Height {
 				return -1000001
 			}
 			if len(safeMoveMap[s.ID]) <= 0 {
@@ -303,22 +299,21 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 				if yHead.X == f.X && yHead.Y == f.Y {
 					score = score + 500
 				}
-				dist := abs(yHead.X - f.X) + abs(yHead.Y - f.Y)
+				dist := abs(yHead.X-f.X) + abs(yHead.Y-f.Y)
 				if dist == 0 {
 					dist = 1
 				}
-				foodScore := int((1.0/float32(dist)) * 1000)
+				foodScore := int((1.0 / float32(dist)) * 1000)
 				score = score + foodScore
 			}
 			for _, os := range b.Snakes {
 				for i, osb := range os.Body {
-					if i != 0 && yHead.X == osb.X &&
-						yHead.Y == osb.Y {
+					if i != 0 && yHead.X == osb.X && yHead.Y == osb.Y {
 						return -1000001
 					}
 				}
 				osTail := os.Body[len(os.Body)-1]
-				dist := abs(yHead.X - osTail.X) + abs(yHead.Y - osTail.Y)
+				dist := abs(yHead.X-osTail.X) + abs(yHead.Y-osTail.Y)
 				if dist < 3 {
 					score = score + 250
 				}
@@ -354,7 +349,7 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 		if dist == 0 {
 			dist = 1
 		}
-		snakeScore := int((1.0/float32(dist)) * 1000)
+		snakeScore := int((1.0 / float32(dist)) * 1000)
 		if len(s.Body) >= len(you.Body) {
 			snakeScore = -snakeScore
 		}
