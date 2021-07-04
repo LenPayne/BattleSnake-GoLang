@@ -3,7 +3,8 @@ package snake
 import (
 	"github.com/BattlesnakeOfficial/rules"
 	"strconv"
-	// "fmt"
+	"log"
+	"os"
 )
 
 type Coord struct {
@@ -68,7 +69,7 @@ func Move(p Payload) string {
 	}
 	ruleset = &standard
 	boardState := getBoardStateFromBoard(p.Board)
-	possibleMoves := []Node{
+	possibleMoves := [4]Node{
 		Node{
 			Move:     rules.SnakeMove{ID: p.You.Id, Move: "up"},
 			Value:    -1000000,
@@ -94,26 +95,29 @@ func Move(p Payload) string {
 	value := -2000000
 	for _, n := range possibleMoves {
 		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
-		// fmt.Printf("----> %s %d\n", n.Move.Move, val)
 		if val > value {
 			move = n.Move.Move
 			value = val
 		}
 	}
-	// fmt.Printf("%d,%d ----> %s\n", p.You.Head.X, p.You.Head.Y, move)
 	return move
 }
 
 func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool, youID string, currentID string, r rules.Ruleset, b *rules.BoardState,
 	thisTurnMoves []rules.SnakeMove) int {
-	// fmt.Printf("-> %s %d %d %d\n", node.Move.Move, depth, alpha, beta)
 	if b == nil || b.Snakes == nil {
+		if isDebug() {
+			log.Printf("-> %d %s %s %d (%d/%d) ^^^\n", depth, node.Move.Move, currentID, -1000002, alpha, beta)
+		}
 		return -1000002
 	}
 	thisValue := scoreMoveOnBoardState(youID, node.Move, r, b)
 	gameIsOver, _ := r.IsGameOver(b)
 	if depth == 0 || gameIsOver || thisValue <= -1000000 {
 		node.Value = thisValue
+		if isDebug() {
+			log.Printf("-> %d %s %s %d (%d/%d) !!!\n", depth, node.Move.Move, currentID, thisValue, alpha, beta)
+		}
 		return thisValue
 	}
 	possibleMoves := []rules.SnakeMove{
@@ -171,6 +175,9 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 				break
 			}
 		}
+		if isDebug() {
+			log.Printf("-> %d %s %s %d (%d/%d)\n", depth, node.Move.Move, currentID, value, alpha, beta)
+		}
 		return value
 	} else {
 		value := 1000000
@@ -198,17 +205,20 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 				break
 			}
 		}
+		if isDebug() {
+			log.Printf("-> %d %s %s %d (%d/%d)\n", depth, node.Move.Move, currentID, value, alpha, beta)
+		}
 		return value
 	}
 }
 
 func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *rules.BoardState) int {
+	if b == nil || b.Snakes == nil {
+		return -1000003
+	}
 	moves := make([]rules.SnakeMove, 0)
 	moves = append(moves, m)
 	safeMoveMap := make(map[string]map[string]bool, 0)
-	if b == nil || b.Snakes == nil {
-		return -1000000
-	}
 	for _, s := range b.Snakes {
 		safeMoves := map[string]bool{
 			"up":    true,
@@ -296,14 +306,11 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 				score = score - 100
 			}
 			for _, f := range b.Food {
-				if yHead.X == f.X && yHead.Y == f.Y {
-					score = score + 500
-				}
 				dist := abs(yHead.X-f.X) + abs(yHead.Y-f.Y)
 				if dist == 0 {
 					dist = 1
 				}
-				foodScore := int((1.0 / float32(dist)) * 1000)
+				foodScore := int((1.0 / float32(dist)) * 5000)
 				score = score + foodScore
 			}
 			for _, os := range b.Snakes {
@@ -313,9 +320,12 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 					}
 				}
 				osTail := os.Body[len(os.Body)-1]
+				osTail2 := os.Body[len(os.Body)-2]
+				osHas2Tail := osTail.X == osTail2.X && osTail.Y == osTail2.Y
 				dist := abs(yHead.X-osTail.X) + abs(yHead.Y-osTail.Y)
-				if dist < 3 {
-					score = score + 250
+				if !osHas2Tail {
+					tailScore := int((1.0 / float32(dist)) * 1000)
+					score = score + tailScore
 				}
 			}
 			break
@@ -332,10 +342,10 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 		if dist <= 2 {
 			if len(s.Body) >= len(you.Body) {
 				if len(safeMoveMap[youID]) == 2 {
-					score = score - 500
+					score = score - 5000
 				}
 				if len(safeMoveMap[youID]) == 3 {
-					score = score - 250
+					score = score - 2500
 				}
 			} else {
 				if len(safeMoveMap[youID]) == 2 {
@@ -473,4 +483,12 @@ func snakesToSnakes(snArray []Snake) []rules.Snake {
 		s = append(s, snakeToSnake(sn))
 	}
 	return s
+}
+
+func isDebug() bool {
+        val, ok := os.LookupEnv("ENV")
+        if ok && val == "development" {
+                return true
+        }
+        return false
 }
