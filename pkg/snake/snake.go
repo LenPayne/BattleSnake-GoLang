@@ -109,6 +109,9 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 	youID string, currentID string, r rules.Ruleset, b *rules.BoardState,
 	thisTurnMoves []rules.SnakeMove) int {
 	// fmt.Printf("-> %s %d %d %d\n", node.Move.Move, depth, alpha, beta)
+	if b == nil || b.Snakes == nil {
+		return -1000001
+	}
 	thisValue := scoreMoveOnBoardState(youID, node.Move, r, b)
 	gameIsOver, _ := r.IsGameOver(b)
 	if depth == 0 || gameIsOver || thisValue <= -1000000 {
