@@ -351,6 +351,14 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 				}
 			}
 		}
+		if dist == 0 {
+			dist = 1
+		}
+		snakeScore := int((1.0/float32(dist)) * 1000)
+		if len(s.Body) >= len(you.Body) {
+			snakeScore = -snakeScore
+		}
+		score = score + snakeScore
 	}
 	return score
 }
