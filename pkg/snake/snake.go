@@ -3,7 +3,7 @@ package snake
 import (
 	"github.com/BattlesnakeOfficial/rules"
 	"strconv"
-	"fmt"
+	// "fmt"
 )
 
 type Coord struct {
