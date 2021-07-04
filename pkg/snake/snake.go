@@ -206,6 +206,9 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset,
 	moves := make([]rules.SnakeMove, 0)
 	moves = append(moves, m)
 	safeMoveMap := make(map[string]map[string]bool, 0)
+	if b == nil || b.Snakes == nil {
+		return -1000000
+	}
 	for _, s := range b.Snakes {
 		safeMoves := map[string]bool{
 			"up":    true,
