@@ -102,7 +102,7 @@ func Move(p Payload) string {
 		}
 	}
 	if value <= -1000000 {
-		move = findBestAdjacent(p.You.Head, boardMap)
+		move = findBestAdjacent(p, boardMap)
 	}
 	return move
 }
@@ -436,26 +436,27 @@ func buildBoardMap(p Payload) map[string]int {
 	return boardMap
 }
 
-func findBestAdjacent(c Coord, boardMap map[string]int) string {
+func findBestAdjacent(p Payload, boardMap map[string]int) string {
+	c := p.You.Head
 	val := -1000000
 	move := "up"
 	upVal := boardMap[keyFromCoord(Coord{c.X, c.Y+1})]
-	if upVal > val {
+	if upVal > val && c.Y < (p.Board.Height - 1) {
 		val = upVal
 		move = "up"
 	}
 	downVal := boardMap[keyFromCoord(Coord{c.X, c.Y-1})]
-	if downVal > val {
+	if downVal > val && c.Y > 0 {
 		val = downVal
 		move = "down"
 	}
 	leftVal := boardMap[keyFromCoord(Coord{c.X-1, c.Y})]
-	if leftVal > val {
+	if leftVal > val && c.X > 0 {
 		val = leftVal
 		move = "left"
 	}
 	rightVal := boardMap[keyFromCoord(Coord{c.X+1, c.Y})]
-	if rightVal > val {
+	if rightVal > val && c.X < (p.Board.Width - 1) {
 		val = rightVal
 		move = "right"
 	}
