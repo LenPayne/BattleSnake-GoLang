@@ -421,7 +421,7 @@ func buildBoardMap(p Payload) map[string]int {
 			snakeFactor := -1000
 			if i == 0 && s.Id != p.You.Id {
 				headFactor := 100 * (len(p.You.Body) - len(s.Body))
-				headFactor = max(min(snakeFactor, 1000), -1000)
+				headFactor = max(min(headFactor, 1000), -1000)
 				adjacents := getAdjacentCoords(c)
 				for _, adj := range adjacents {
 					if adj.Y < p.Board.Height && adj.Y >= 0 && adj.X >= 0 && adj.X < p.Board.Width {
