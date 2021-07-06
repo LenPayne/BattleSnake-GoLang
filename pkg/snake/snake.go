@@ -418,7 +418,7 @@ func buildBoardMap(p Payload) map[string]int {
 			if i >= (len(s.Body) - 1) && !sHasDoubleTail {
 				continue
 			}
-			snakeFactor := -10
+			snakeFactor := -1000
 			if i == 0 && s.Id != p.You.Id {
 				headFactor := 100 * (len(p.You.Body) - len(s.Body))
 				headFactor = max(min(snakeFactor, 1000), -1000)
@@ -530,8 +530,8 @@ func findBestAdjacent(p Payload, boardMap map[string]int) string {
 		}
 	}
 	if isDebug() {
-		log.Printf("Determining Failsafe: U:%d D:%d L:%d R:%d Move: %s\n",
-			safeMoves["up"], safeMoves["down"], safeMoves["left"], safeMoves["right"], move)
+		log.Printf("Determining Failsafe: U:%d/%d D:%d/%d L:%d/%d R:%d/%d Move: %s\n",
+			safeMoves["up"], upVal, safeMoves["down"], downVal, safeMoves["left"], leftVal, safeMoves["right"], rightVal, move)
 	}
 	return move
 }
