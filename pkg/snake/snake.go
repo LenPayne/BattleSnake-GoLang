@@ -329,7 +329,7 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 				if dist == 0 {
 					dist = 1
 				}
-				foodScore := int((1.0 / float32(dist)) * 5000)
+				foodScore := int((1.0 / float32(dist)) * 10000)
 				score = score + foodScore
 			}
 			for _, os := range b.Snakes {
@@ -453,16 +453,16 @@ func buildBoardMap(p Payload) map[string]int {
 	for _, f := range p.Board.Food {
 		key := keyFromCoord(f)
 		if val, ok := boardMap[key]; ok {
-			boardMap[key] = val + 5
+			boardMap[key] = val + 50
 		} else {
-			boardMap[key] = 5
+			boardMap[key] = 50
 		}
 		nearbyKeys := splashKeysFromCoord(f, p.Board.Width, p.Board.Height)
 		for _, k := range nearbyKeys {
 			if val, ok := boardMap[k]; ok {
-				boardMap[k] = val + 3
+				boardMap[k] = val + 30
 			} else {
-				boardMap[k] = 3
+				boardMap[k] = 30
 			}
 		}
 	}
