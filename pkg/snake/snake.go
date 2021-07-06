@@ -94,14 +94,23 @@ func Move(p Payload) string {
 	}
 	move := "left"
 	value := -2000000
+	isTieBreak := false
+	tieBreakValue := 0
 	for _, n := range possibleMoves {
 		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
 		if val > value {
 			move = n.Move.Move
 			value = val
+			isTieBreak = false
+		} else if val == value {
+			isTieBreak = true
+			tieBreakValue = val
 		}
 	}
-	if value <= -1000000 {
+	if isDebug() {
+		log.Printf("Done MinMax: %s %d %v %v %v %v\n", move, value, isTieBreak, tieBreakValue, value, tieBreakValue == value)
+	}
+	if value <= -1000000 || (isTieBreak && tieBreakValue == value) {
 		move = findBestAdjacent(p, boardMap)
 	}
 	return move
@@ -411,7 +420,19 @@ func buildBoardMap(p Payload) map[string]int {
 			}
 			snakeFactor := -10
 			if i == 0 && s.Id != p.You.Id {
-				snakeFactor = 10 * (len(p.You.Body) - len(s.Body))
+				headFactor := 100 * (len(p.You.Body) - len(s.Body))
+				headFactor = max(min(snakeFactor, 1000), -1000)
+				adjacents := getAdjacentCoords(c)
+				for _, adj := range adjacents {
+					if adj.Y < p.Board.Height && adj.Y >= 0 && adj.X >= 0 && adj.X < p.Board.Width {
+						k := keyFromCoord(adj)
+						if val, ok := boardMap[k]; ok {
+							boardMap[k] = val + headFactor / 2
+						} else {
+							boardMap[k] = headFactor / 2
+						}
+					}
+				}
 			}
 			key := keyFromCoord(c)
 			if val, ok := boardMap[key]; ok {
@@ -499,7 +520,7 @@ func findBestAdjacent(p Payload, boardMap map[string]int) string {
 			if isDebug() {
 				log.Printf("Investigating %v %d\n", coord, len(vol))
 			}
-			safeMoves[m] = safeMoves[m] + (len(vol) * 10)
+			safeMoves[m] = safeMoves[m] + (len(vol) * 2)
 		}
 	}
 	for m, safeVal := range safeMoves {
