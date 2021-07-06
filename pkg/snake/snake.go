@@ -233,7 +233,13 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 		sHead := s.Body[0]
 		// Don't Run Into Bodies
 		for _, os := range b.Snakes {
-			for _, sb := range os.Body {
+			osTail := os.Body[len(os.Body)-1]
+			osTail2 := os.Body[len(os.Body)-2]
+			osHas2Tail := osTail.X == osTail2.X && osTail.Y == osTail2.Y
+			for i, sb := range os.Body {
+				if i >= (len(os.Body) - 1) && !osHas2Tail {
+					continue;
+				}
 				if (sHead.Y+1) == sb.Y && sHead.X == sb.X {
 					if _, ok := safeMoves["up"]; ok {
 						delete(safeMoves, "up")
@@ -396,10 +402,16 @@ func max(x int, y int) int {
 func buildBoardMap(p Payload) map[string]int {
 	boardMap := make(map[string]int)
 	for _, s := range p.Board.Snakes {
+		sTail := s.Body[len(s.Body) - 1]
+		sTail2 := s.Body[len(s.Body) - 2]
+		sHasDoubleTail := sTail.X == sTail2.X && sTail.Y == sTail2.Y
 		for i, c := range s.Body {
-			snakeFactor := -10
-			if i == 0 {
+			if i >= (len(s.Body) - 1) && !sHasDoubleTail {
 				continue
+			}
+			snakeFactor := -10
+			if i == 0 && s.Id != p.You.Id {
+				snakeFactor = 10 * (len(p.You.Body) - len(s.Body))
 			}
 			key := keyFromCoord(c)
 			if val, ok := boardMap[key]; ok {
@@ -433,38 +445,118 @@ func buildBoardMap(p Payload) map[string]int {
 			}
 		}
 	}
+	for i := int32(0); i < p.Board.Width; i++ {
+		for j := int32(0); j < p.Board.Height; j++ {
+			key := keyFromCoord(Coord{i,j})
+			if _, ok := boardMap[key]; !ok {
+				boardMap[key] = 0
+			}
+		}
+	}
 	return boardMap
 }
 
 func findBestAdjacent(p Payload, boardMap map[string]int) string {
-	c := p.You.Head
+	c := p.You.Body[0]
 	val := -1000000
 	move := "up"
+	safeMoves := map[string]int{
+		"up": -1,
+		"down": -1,
+		"left": -1,
+		"right": -1,
+	}
 	upVal := boardMap[keyFromCoord(Coord{c.X, c.Y+1})]
-	if upVal > val && c.Y < (p.Board.Height - 1) {
-		val = upVal
-		move = "up"
+	if upVal >= 0 && c.Y < (p.Board.Height - 1) {
+		safeMoves["up"] = upVal
 	}
 	downVal := boardMap[keyFromCoord(Coord{c.X, c.Y-1})]
-	if downVal > val && c.Y > 0 {
-		val = downVal
-		move = "down"
+	if downVal >= 0 && c.Y > 0 {
+		safeMoves["down"] = downVal
 	}
 	leftVal := boardMap[keyFromCoord(Coord{c.X-1, c.Y})]
-	if leftVal > val && c.X > 0 {
-		val = leftVal
-		move = "left"
+	if leftVal >= 0 && c.X > 0 {
+		safeMoves["left"] = leftVal
 	}
 	rightVal := boardMap[keyFromCoord(Coord{c.X+1, c.Y})]
-	if rightVal > val && c.X < (p.Board.Width - 1) {
-		val = rightVal
-		move = "right"
+	if rightVal >= 0 && c.X < (p.Board.Width - 1) {
+		safeMoves["right"] = rightVal
+	}
+	for m, safeVal := range safeMoves {
+		if safeVal >= 0 {
+			coord := Coord{c.X, c.Y}
+			switch m {
+				case "up":
+					coord.Y = coord.Y + 1
+				case "down":
+					coord.Y = coord.Y - 1
+				case "left":
+					coord.X = coord.X - 1
+				case "right":
+					coord.X = coord.X + 1
+			}
+			vol := getAreaUnderCoord(coord, boardMap, make([]string, 0), 10)
+			if isDebug() {
+				log.Printf("Investigating %v %d\n", coord, len(vol))
+			}
+			safeMoves[m] = safeMoves[m] + (len(vol) * 10)
+		}
+	}
+	for m, safeVal := range safeMoves {
+		if safeVal > val {
+			val = safeVal
+			move = m
+		}
+	}
+	if isDebug() {
+		log.Printf("Determining Failsafe: U:%d D:%d L:%d R:%d Move: %s\n",
+			safeMoves["up"], safeMoves["down"], safeMoves["left"], safeMoves["right"], move)
 	}
 	return move
 }
 
+func getAreaUnderCoord(c Coord, boardMap map[string]int, visitedKeys []string, depth int) []string {
+	for _, adj := range getAdjacentCoords(c) {
+		adjKey := keyFromCoord(adj)
+		val, keyInMap := boardMap[adjKey]
+		keyInKeys := false
+		for _, k := range visitedKeys {
+			if adjKey == k {
+				keyInKeys = true
+				break
+			}
+		}
+		if depth >= 0 && val >= 0 && !keyInKeys && keyInMap {
+			visitedKeys = append(visitedKeys, adjKey)
+			newKeys := getAreaUnderCoord(adj, boardMap, visitedKeys, depth - 1)
+			for _, newKey := range newKeys {
+				newKeyInKeys := false
+				for _, k := range visitedKeys {
+					if newKey == k {
+						newKeyInKeys = true
+						break
+					}
+				}
+				if !newKeyInKeys {
+					visitedKeys = append(visitedKeys, newKey)
+				}
+			}
+		}
+	}
+	return visitedKeys
+}
+
 func keyFromCoord(c Coord) string {
 	return strconv.Itoa(int(c.X)) + "-" + strconv.Itoa(int(c.Y))
+}
+
+func getAdjacentCoords(c Coord) []Coord {
+	return []Coord{
+		Coord{c.X, c.Y + 1},
+		Coord{c.X, c.Y - 1},
+		Coord{c.X - 1, c.Y},
+		Coord{c.X + 1, c.Y},
+	}
 }
 
 func splashKeysFromCoord(c Coord, w int32, h int32) []string {
