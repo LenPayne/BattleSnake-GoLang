@@ -520,7 +520,7 @@ func findBestAdjacent(p Payload, boardMap map[string]int) string {
 			if isDebug() {
 				log.Printf("Investigating %v %d\n", coord, len(vol))
 			}
-			safeMoves[m] = safeMoves[m] + (len(vol) * 2)
+			safeMoves[m] = safeMoves[m] + (min(len(p.You.Body) * 2, len(vol)) * 2)
 		}
 	}
 	for m, safeVal := range safeMoves {
