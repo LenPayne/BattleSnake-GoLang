@@ -97,7 +97,7 @@ func Move(p Payload) string {
 	isTieBreak := false
 	tieBreakValue := 0
 	for _, n := range possibleMoves {
-		val := alphaBeta(n, 5, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
+		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
 		if val > value {
 			move = n.Move.Move
 			value = val
