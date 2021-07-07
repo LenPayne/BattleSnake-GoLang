@@ -302,6 +302,10 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 		// Pick from What's Left
 		yHead := you.Body[0]
 		youVec := Coord{yHead.X - sHead.X, yHead.Y - sHead.Y}
+		if len(s.Body) <= len(you.Body) {
+			youVec.X = -youVec.X
+			youVec.Y = -youVec.Y
+		}
 		var move string
 		if youVec.X > 0 && abs(youVec.X) > abs(youVec.Y) {
 			move = "right"
