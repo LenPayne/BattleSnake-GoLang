@@ -97,7 +97,7 @@ func Move(p Payload) string {
 	isTieBreak := false
 	tieBreakValue := 0
 	for _, n := range possibleMoves {
-		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
+		val := alphaBeta(n, 5, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
 		if val > value {
 			move = n.Move.Move
 			value = val
@@ -232,6 +232,13 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 	moves := make([]rules.SnakeMove, 0)
 	moves = append(moves, m)
 	safeMoveMap := make(map[string]map[string]bool, 0)
+	var you rules.Snake
+	for _, s := range b.Snakes {
+		if s.ID == youID {
+			you = s
+		}
+	}
+	youLen := len(you.Body)
 	for _, s := range b.Snakes {
 		safeMoves := map[string]bool{
 			"up":    true,
@@ -293,10 +300,28 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 			}
 		}
 		// Pick from What's Left
-		move := "left"
+		yHead := you.Body[0]
+		youVec := Coord{yHead.X - sHead.X, yHead.Y - sHead.Y}
+		var move string
+		if youVec.X > 0 && abs(youVec.X) > abs(youVec.Y) {
+			move = "right"
+		} else if youVec.X <= 0 && abs(youVec.X) > abs(youVec.Y) {
+			move = "left"
+		} else if youVec.Y > 0 && abs(youVec.X) <= abs(youVec.Y) {
+			move = "up"
+		}
+		if youVec.Y <= 0 && abs(youVec.X) <= abs(youVec.Y) {
+			move = "down"
+		}
+		reallySafe := "left"
 		for k, _ := range safeMoves {
-			move = k
-			break
+			if k == move {
+				break
+			}
+			reallySafe = k
+		}
+		if move == "" {
+			move = reallySafe
 		}
 		safeMoveMap[s.ID] = safeMoves
 		if m.ID == s.ID {
@@ -307,7 +332,6 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 	nextBoard, _ := r.CreateNextBoardState(b, moves)
 	score := 0
 	// Find Yourself
-	var you rules.Snake
 	for _, s := range nextBoard.Snakes {
 		if s.ID == youID {
 			you = s
@@ -316,13 +340,16 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 				return -1000001
 			}
 			if yHead.X < 0 || yHead.X >= nextBoard.Width || yHead.Y < 0 || yHead.Y >= nextBoard.Height {
-				return -1000001
+				return -1000004
 			}
 			if len(safeMoveMap[s.ID]) <= 0 {
 				score = score - 1000
 			}
 			if s.Health < 20 {
 				score = score - 100
+			}
+			if youLen < len(you.Body) {
+				score = score + 5000
 			}
 			for _, f := range b.Food {
 				dist := abs(yHead.X-f.X) + abs(yHead.Y-f.Y)
@@ -335,7 +362,7 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 			for _, os := range b.Snakes {
 				for i, osb := range os.Body {
 					if i != 0 && yHead.X == osb.X && yHead.Y == osb.Y {
-						return -1000001
+						return -1000005
 					}
 				}
 				osTail := os.Body[len(os.Body)-1]
@@ -368,10 +395,10 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 				}
 			} else {
 				if len(safeMoveMap[youID]) == 2 {
-					score = score + 500
+					score = score + 1000
 				}
 				if len(safeMoveMap[youID]) == 3 {
-					score = score + 250
+					score = score + 500
 				}
 			}
 		}
