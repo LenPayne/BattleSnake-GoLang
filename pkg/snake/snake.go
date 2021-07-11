@@ -97,7 +97,7 @@ func Move(p Payload) string {
 	isTieBreak := false
 	tieBreakValue := 0
 	for _, n := range possibleMoves {
-		val := alphaBeta(n, 15, -1000000, 1000000, true, p.You.Id, p.You.Id, ruleset, boardState, make([]rules.SnakeMove, 0))
+		val := alphaBeta(n, (len(boardState.Snakes) * 4), -1000000, 1000000, (boardState.Snakes[0].ID == p.You.Id), p.You.Id, boardState.Snakes[0].ID, ruleset, boardState, make([]rules.SnakeMove, 0))
 		if val > value {
 			move = n.Move.Move
 			value = val
@@ -120,16 +120,17 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 	thisTurnMoves []rules.SnakeMove) int {
 	if b == nil || b.Snakes == nil {
 		if isDebug() {
-			log.Printf("-> %d %s %s %d (%d/%d) ^^^\n", depth, node.Move.Move, currentID, -1000002, alpha, beta)
+			log.Printf("-> %v %d %s %s %d (%d/%d) ^^^\n", (youID == currentID), depth, node.Move.Move, currentID, -1000002, alpha, beta)
 		}
 		return -1000002
 	}
 	thisValue := scoreMoveOnBoardState(youID, node.Move, r, b)
 	gameIsOver, _ := r.IsGameOver(b)
-	if depth == 0 || gameIsOver || thisValue <= -1000000 {
+	if depth == 0 || gameIsOver || thisValue < -1000000 {
 		node.Value = thisValue
 		if isDebug() {
-			log.Printf("-> %d %s %s %d (%d/%d) !!!\n", depth, node.Move.Move, currentID, thisValue, alpha, beta)
+			log.Printf("-> %v %d %s %s %d (%d/%d) %v !!!\n", (youID == currentID), depth, node.Move.Move, currentID, thisValue, alpha, beta, gameIsOver)
+			log.Printf("%v\n", b)
 		}
 		return thisValue
 	}
@@ -142,7 +143,7 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 	movesToDelete := make([]int, 0)
 	for i, m := range possibleMoves {
 		value := scoreMoveOnBoardState(youID, m, r, b)
-		if value <= -1000000 {
+		if (value <= -1000000 && currentID == youID) || (value >= 1000000 && currentID != youID) {
 			movesToDelete = append(movesToDelete, i)
 		}
 	}
@@ -150,23 +151,26 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 		possibleMoves[i].Move = "delete"
 	}
 	nextID := youID
-	lastWasCurrent := false
-	isLastThisRound := false
 	copyTurnMoves := make([]rules.SnakeMove, len(thisTurnMoves))
 	for i, v := range thisTurnMoves {
 		copyTurnMoves[i] = v
 	}
-	for i, s := range b.Snakes {
-		if i == (len(b.Snakes) - 1) {
-			isLastThisRound = true
+	for _, s := range b.Snakes {
+		snakeHasGone := false
+		for _, m := range copyTurnMoves {
+			if m.ID == s.ID {
+				snakeHasGone = true
+				break
+			}
 		}
-		if lastWasCurrent {
+		if !snakeHasGone && currentID != s.ID {
 			nextID = s.ID
 			break
-		} else if currentID == s.ID {
-			lastWasCurrent = true
 		}
 	}
+	nextIsYou := nextID == youID
+	var boardState *rules.BoardState
+	var err error
 	if maximizingPlayer {
 		value := -1000000
 		for _, m := range possibleMoves {
@@ -180,8 +184,16 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 		}
 		for _, n := range node.Children {
 			copyTurnMoves = append(copyTurnMoves, n.Move)
+			boardState = b
+			if len(copyTurnMoves) == len(b.Snakes) {
+				boardState, err = r.CreateNextBoardState(b,
+					copyTurnMoves)
+				if err != nil {
+					log.Printf("Error Generating Move: %d %s %v %v\n", depth, currentID, copyTurnMoves, err)
+				}
+			}
 			value = max(value, alphaBeta(n, depth-1, alpha, beta,
-				false, youID, nextID, r, b,
+				false, youID, nextID, r, boardState,
 				copyTurnMoves))
 			alpha = max(alpha, value)
 			if value >= beta {
@@ -189,7 +201,10 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 			}
 		}
 		if isDebug() {
-			log.Printf("-> %d %s %s %d (%d/%d)\n", depth, node.Move.Move, currentID, value, alpha, beta)
+			log.Printf("-> %v %d %s %s %d (%d/%d)\n", (youID == currentID), depth, node.Move.Move, currentID, value, alpha, beta)
+			if len(copyTurnMoves) == len(b.Snakes) {
+				log.Printf("%d %v\n", depth, boardState)
+			}
 		}
 		return value
 	} else {
@@ -205,13 +220,16 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 		}
 		for _, n := range node.Children {
 			copyTurnMoves = append(copyTurnMoves, n.Move)
-			boardState := b
-			if isLastThisRound {
-				boardState, _ = r.CreateNextBoardState(b,
+			boardState = b
+			if len(copyTurnMoves) == len(b.Snakes) {
+				boardState, err = r.CreateNextBoardState(b,
 					copyTurnMoves)
+				if err != nil {
+					log.Printf("Error Generating Move: %d %s %v %v\n", depth, currentID, copyTurnMoves, err)
+				}
 			}
 			value = min(value, alphaBeta(n, depth-1, alpha, beta,
-				isLastThisRound, youID, nextID, r,
+				nextIsYou, youID, nextID, r,
 				boardState, copyTurnMoves))
 			beta = min(beta, value)
 			if value <= alpha {
@@ -220,6 +238,9 @@ func alphaBeta(node Node, depth int, alpha int, beta int, maximizingPlayer bool,
 		}
 		if isDebug() {
 			log.Printf("-> %d %s %s %d (%d/%d)\n", depth, node.Move.Move, currentID, value, alpha, beta)
+			if len(copyTurnMoves) == len(b.Snakes) {
+				log.Printf("%d %v\n", depth, boardState)
+			}
 		}
 		return value
 	}
@@ -302,20 +323,22 @@ func scoreMoveOnBoardState(youID string, m rules.SnakeMove, r rules.Ruleset, b *
 		// Pick from What's Left
 		yHead := you.Body[0]
 		youVec := Coord{yHead.X - sHead.X, yHead.Y - sHead.Y}
-		if len(s.Body) <= len(you.Body) {
+		if len(s.Body) <= len(you.Body) || m.ID == youID {
 			youVec.X = -youVec.X
 			youVec.Y = -youVec.Y
 		}
 		var move string
-		if youVec.X > 0 && abs(youVec.X) > abs(youVec.Y) {
-			move = "right"
-		} else if youVec.X <= 0 && abs(youVec.X) > abs(youVec.Y) {
-			move = "left"
-		} else if youVec.Y > 0 && abs(youVec.X) <= abs(youVec.Y) {
-			move = "up"
-		}
-		if youVec.Y <= 0 && abs(youVec.X) <= abs(youVec.Y) {
-			move = "down"
+		if s.ID != youID {
+			if youVec.X > 0 && abs(youVec.X) > abs(youVec.Y) {
+				move = "right"
+			} else if youVec.X <= 0 && abs(youVec.X) > abs(youVec.Y) {
+				move = "left"
+			} else if youVec.Y > 0 && abs(youVec.X) <= abs(youVec.Y) {
+				move = "up"
+			}
+			if youVec.Y <= 0 && abs(youVec.X) <= abs(youVec.Y) {
+				move = "down"
+			}
 		}
 		reallySafe := "left"
 		for k, _ := range safeMoves {
@@ -510,7 +533,7 @@ func buildBoardMap(p Payload) map[string]int {
 
 func findBestAdjacent(p Payload, boardMap map[string]int) string {
 	c := p.You.Body[0]
-	val := -1000000
+	val := -1000
 	move := "up"
 	safeMoves := map[string]int{
 		"up": -1,
@@ -519,20 +542,28 @@ func findBestAdjacent(p Payload, boardMap map[string]int) string {
 		"right": -1,
 	}
 	upVal := boardMap[keyFromCoord(Coord{c.X, c.Y+1})]
-	if upVal >= 0 && c.Y < (p.Board.Height - 1) {
+	if c.Y < (p.Board.Height - 1) {
 		safeMoves["up"] = upVal
+	} else {
+		safeMoves["up"] = val
 	}
 	downVal := boardMap[keyFromCoord(Coord{c.X, c.Y-1})]
-	if downVal >= 0 && c.Y > 0 {
+	if c.Y > 0 {
 		safeMoves["down"] = downVal
+	} else {
+		safeMoves["down"] = val
 	}
 	leftVal := boardMap[keyFromCoord(Coord{c.X-1, c.Y})]
-	if leftVal >= 0 && c.X > 0 {
+	if c.X > 0 {
 		safeMoves["left"] = leftVal
+	} else {
+		safeMoves["left"] = val
 	}
 	rightVal := boardMap[keyFromCoord(Coord{c.X+1, c.Y})]
-	if rightVal >= 0 && c.X < (p.Board.Width - 1) {
+	if c.X < (p.Board.Width - 1) {
 		safeMoves["right"] = rightVal
+	} else {
+		safeMoves["right"] = val
 	}
 	for m, safeVal := range safeMoves {
 		if safeVal >= 0 {
@@ -552,6 +583,8 @@ func findBestAdjacent(p Payload, boardMap map[string]int) string {
 				log.Printf("Investigating %v %d\n", coord, len(vol))
 			}
 			safeMoves[m] = safeMoves[m] + (min(len(p.You.Body) * 2, len(vol)) * 2)
+		} else if safeVal > val {
+			safeMoves[m] = 0
 		}
 	}
 	for m, safeVal := range safeMoves {
